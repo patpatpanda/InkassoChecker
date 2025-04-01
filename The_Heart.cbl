@@ -1,31 +1,46 @@
 ﻿       IDENTIFICATION DIVISION.
-       PROGRAM-ID. INKASSOChecker.
+       PROGRAM-ID. The_Heart IS RECURSIVE.
+
 
        ENVIRONMENT DIVISION.
+       FILE-CONTROL.
+             
        CONFIGURATION SECTION.
+            
 
        DATA DIVISION.
+       FILE SECTION.
+           
 
        WORKING-STORAGE SECTION.
            EXEC SQL INCLUDE SQLCA END-EXEC.
        COPY "P_W255.CPY".
        COPY "P_W666.CPY".
 
+      
+       01 WS-LOGTEXT PIC X(100).
+
+      
        01 WS-TIMESTAMP PIC X(20).
        01 WS-ÅR PIC X(4).
        01 WS-MÅNAD PIC X(2).
        01 WS-DAG PIC X(2).
 
        01 ws-count PIC 9(4) VALUE 0.
-
+          
        PROCEDURE DIVISION.
 
        A-MAIN SECTION.
+          
+           MOVE "Försöker INSERTA: " TO WS-LOGTEXT
+          
+           DISPLAY WS-LOGTEXT
 
            PERFORM B-CONNECT-TO-DB
            PERFORM CHECK-OBETALDA-FAKTUROR
-      *    PERFORM REMOVE-BETALDA
-      *    PERFORM FLAGGA-FOR-INKASSO
+           PERFORM REMOVE-BETALDA
+           PERFORM FLAGGA-FOR-INKASSO
+           PERFORM BYGG-DATUM-PAMINNELSE
            DISPLAY "Inkasso batch klar!"
            EXEC SQL
        COMMIT
@@ -81,7 +96,7 @@
 
                IF SQLCODE = 0
 
-                   *> Här placerar du INSERT-LOGIKEN 👇
+                   
                    EXEC SQL
                        SELECT COUNT(*) INTO :ws-count
                        FROM REDWARRIOR.dbo.paminnelser
@@ -135,6 +150,29 @@
                CLOSE OBETALDA_CURSOR
            END-EXEC.
 
+       BYGG-DATUM-PAMINNELSE SECTION.
+
+           *> Hämta dagens datum i ISO-format: YYYYMMDDhhmmss...
+           MOVE FUNCTION CURRENT-DATE TO WS-TIMESTAMP
+
+           *> Plocka ut år, månad och dag från strängen
+           MOVE WS-TIMESTAMP(1:4) TO WS-ÅR
+           MOVE WS-TIMESTAMP(5:2) TO WS-MÅNAD
+           MOVE WS-TIMESTAMP(7:2) TO WS-DAG
+
+           *> Bygg ett datumsträng: 'YYYY-MM-DD'
+           STRING
+             WS-ÅR "-" WS-MÅNAD "-" WS-DAG
+             DELIMITED BY SIZE
+             INTO paminnelser-paminnelse-datum
+           END-STRING
+
+           *> Sätt förfallodatum till 10 dagar från idag
+           EXEC SQL
+              SELECT CONVERT(CHAR(10), DATEADD(DAY, 10, GETDATE()), 120)
+               INTO :paminnelser-forfallo-datum
+           END-EXEC.
+
        REMOVE-BETALDA SECTION.
 
            EXEC SQL
@@ -150,7 +188,12 @@
            IF SQLCODE = 0
                DISPLAY "Betalda fakturor borttagna från paminnelser."
            ELSE
-               DISPLAY "FEL I REMOVE-BETALDA. SQLCODE = " SQLCODE
+               IF SQLCODE = 100
+                   DISPLAY
+                     "Inga betalda fakturor hittades i paminnelser."
+               ELSE
+                   DISPLAY "FEL I REMOVE-BETALDA. SQLCODE = " SQLCODE
+               END-IF
            END-IF.
 
        FLAGGA-FOR-INKASSO SECTION.
@@ -163,23 +206,15 @@
            END-EXEC
 
            IF SQLCODE = 0
-               DISPLAY "Påminnelser flaggade för inkasso."
+               DISPLAY "Skickar påminnelse till kund: " faktura-kundnr
+              
+
            ELSE
-               DISPLAY "FEL VID FLAGGA-FOR-INKASSO. SQLCODE = " SQLCODE
+               IF SQLCODE = 100
+                   DISPLAY "Inga påminnelser att flagga för inkasso."
+               ELSE
+                   DISPLAY "FEL VID FLAGGA-FOR-INKASSO. SQLCODE = "
+                     SQLCODE
+               END-IF
            END-IF.
 
-       BYGG-DATUM-PAMINNELSE SECTION.
-
-           MOVE FUNCTION CURRENT-DATE TO WS-TIMESTAMP
-           MOVE WS-TIMESTAMP(1:4) TO WS-ÅR
-           MOVE WS-TIMESTAMP(5:2) TO WS-MÅNAD
-           MOVE WS-TIMESTAMP(7:2) TO WS-DAG
-
-           STRING
-             WS-ÅR "-" WS-MÅNAD "-" WS-DAG
-             DELIMITED BY SIZE
-             INTO paminnelser-paminnelse-datum
-           END-STRING
-
-           MOVE paminnelser-paminnelse-datum TO
-             paminnelser-forfallo-datum.

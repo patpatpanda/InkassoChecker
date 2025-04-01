@@ -9,6 +9,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>InkassoChecker</RootNamespace>
     <MFProjectType>Native</MFProjectType>
+    <SQLDirectives>SQL(DBMAN=ODBC)</SQLDirectives>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>.\bin\x86\Debug\</OutputPath>
@@ -41,7 +42,7 @@
     <Pointer64>True</Pointer64>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program1.cbl" />
+    <Compile Include="The_Heart.cbl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Micro Focus\Visual COBOL\v1.0\MicroFocus.COBOL.targets" />
 </Project>
