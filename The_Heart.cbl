@@ -167,21 +167,22 @@
                END-IF
            END-IF.
 
-       FLAGGA-FOR-INKASSO SECTION.
-           DISPLAY "== Flaggar gamla påminnelser för inkasso =="
+      FLAGGA-FOR-INKASSO SECTION.
+    DISPLAY "== Flaggar gamla påminnelser för inkasso =="
 
-           EXEC SQL
-               UPDATE REDWARRIOR.dbo.paminnelser
-               SET inkasso_status = 'JA'
-               WHERE forfallo_datum < CAST(GETDATE() AS DATE)
-                 AND inkasso_status = 'NEJ'
-           END-EXEC
+    EXEC SQL
+        UPDATE REDWARRIOR.dbo.paminnelser
+        SET inkasso_status = 'JA'
+        WHERE forfallo_datum <= DATEADD(DAY, -10, CAST(GETDATE() AS DATE))
+          AND inkasso_status = 'NEJ'
+    END-EXEC
 
-           EVALUATE SQLCODE
-               WHEN 0
-                   DISPLAY "✅ Påminnelser flaggade för inkasso."
-               WHEN 100
-                   DISPLAY "🔍 Inga påminnelser att flagga."
-               WHEN OTHER
-                   DISPLAY "🚨 FEL VID FLAGGA-FOR-INKASSO. SQLCODE = " SQLCODE
-           END-EVALUATE.
+    EVALUATE SQLCODE
+        WHEN 0
+            DISPLAY "✅ Påminnelser flaggade för inkasso."
+        WHEN 100
+            DISPLAY "🔍 Inga påminnelser att flagga."
+        WHEN OTHER
+            DISPLAY "🚨 FEL VID FLAGGA-FOR-INKASSO. SQLCODE = " SQLCODE
+    END-EVALUATE.
+
