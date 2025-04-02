@@ -176,13 +176,14 @@
        REMOVE-BETALDA SECTION.
 
            EXEC SQL
-               DELETE FROM REDWARRIOR.dbo.paminnelser
-               WHERE EXISTS (
-                   SELECT 1
-                   FROM REDWARRIOR.dbo.faktura f
-                   WHERE f.lopnr = paminnelser.lopnr
-                     AND f.belopp_bet > CAST(0.00 AS DECIMAL(11,2))
-               )
+              DELETE FROM REDWARRIOR.dbo.paminnelser
+WHERE EXISTS (
+    SELECT 1
+    FROM REDWARRIOR.dbo.faktura f
+    WHERE f.lopnr = paminnelser.lopnr
+      AND f.belopp_bet > 0.00
+)
+
            END-EXEC
 
            IF SQLCODE = 0
