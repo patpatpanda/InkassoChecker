@@ -173,16 +173,17 @@
                INTO :paminnelser-forfallo-datum
            END-EXEC.
 
-       REMOVE-BETALDA SECTION.
+    REMOVE-BETALDA SECTION.
 
-           EXEC SQL
-              DELETE FROM REDWARRIOR.dbo.paminnelser
-WHERE EXISTS (
-    SELECT 1
-    FROM REDWARRIOR.dbo.faktura f
-    WHERE f.lopnr = paminnelser.lopnr
-      AND f.belopp_bet > 0.00
-)
+    EXEC SQL
+        DELETE FROM paminnelser
+        WHERE EXISTS (
+            SELECT 1
+            FROM faktura
+            WHERE faktura.lopnr = paminnelser.lopnr
+              AND belopp_bet > 0
+        )
+    END-EXEC
 
            END-EXEC
 
